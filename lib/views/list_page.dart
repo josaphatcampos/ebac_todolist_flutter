@@ -1,6 +1,7 @@
 import 'package:ebac_todolist/controllers/list_controller.dart';
 import 'package:ebac_todolist/models/item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class ListPage extends StatefulWidget {
   const ListPage({super.key, required this.title});
@@ -104,6 +105,47 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
+  Future<bool?> _canDelete(BuildContext context, Item item)async{
+
+    return await showDialog(context: context, builder:(context) {
+      return AlertDialog(
+        title: const Center(child: Text("Deletar")),
+        content:  Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Tem certeza que deseja deletar o registro ${item.title}?")
+          ],
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                  child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(true);
+                      },
+                      child: const Text("Deletar", style: TextStyle(color: Colors.red),))),
+              Expanded(
+                  child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(false);
+                      },
+                      child: const Text("Cancel", style: TextStyle(color: Colors.red),))),
+            ],
+          )
+        ],
+        contentPadding: const EdgeInsets.all(16),
+        actionsOverflowButtonSpacing: 50,
+        titlePadding: const EdgeInsets.only(top: 32, bottom: 16),
+        titleTextStyle: const TextStyle(
+            color: Colors.red, fontWeight: FontWeight.bold, fontSize: 24),
+      );
+    },);
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,52 +160,124 @@ class _ListPageState extends State<ListPage> {
             itemCount: _controller.list.length,
             itemBuilder: (context, index) {
               Item item = _controller.list[index];
-              return CheckboxListTile(
-                controlAffinity: ListTileControlAffinity.leading,
-                value: item.isDone,
-                title: Text(
-                  item.title,
-                  style: TextStyle(
-                      decoration: item.isDone
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      fontWeight: FontWeight.bold, color: item.isDone ? Colors.red:Colors.black),
-                ),
-                subtitle: Text(item.description,
-                    style: TextStyle(
-                        decoration: item.isDone
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,  color: item.isDone ? Colors.red:Colors.black)),
-                secondary: Container(
-                  width: 80,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        child: const Icon(Icons.edit),
-                        onTap: () {
-                          callDialog(context, item: item);
+              return Column(
+                children: [
+                  Slidable(
+                    key: Key(item.toString()),
+                    endActionPane: ActionPane(
+                      motion: const DrawerMotion(),
+                      dismissible: DismissiblePane(
+                        closeOnCancel: true,
+                        confirmDismiss: () async {
+                          return await _canDelete(context, item) ?? false;
                         },
-                      ),
-                      GestureDetector(
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.red,
-                        ),
-                        onTap: () {
+                        onDismissed: (){
                           _controller.removeItem(index);
                         },
                       ),
-                    ],
+                      children: [
+                        SlidableAction(
+                          onPressed: (context) {
+                            callDialog(context, item: item);
+                          },
+                          backgroundColor: Color(0xFF21B7CA),
+                          foregroundColor: Colors.white,
+                          icon: Icons.edit,
+                          label: 'Editar',
+                        ),
+                        SlidableAction(
+                          onPressed: (context)async{
+                            bool? remover = await _canDelete(context, item);
+                            if(remover == true){
+                              _controller.removeItem(index);
+                            }
+                          },
+                          backgroundColor: Color(0xFFFE4A49),
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                          label: 'Delete',
+                        ),
+                      ],
+                    ),
+                    startActionPane: ActionPane(
+                      dismissible: DismissiblePane(
+                        closeOnCancel: true,
+                        confirmDismiss: () async {
+                          return await _canDelete(context, item) ?? false;
+                        },
+                        onDismissed: (){
+                          _controller.removeItem(index);
+                        },
+                      ),
+                      motion: const DrawerMotion(),
+                      children: [
+                        SlidableAction(
+                          onPressed: (context)async{
+                            bool? remover = await _canDelete(context, item);
+                            if(remover == true){
+                              _controller.removeItem(index);
+                            }
+                          },
+                          backgroundColor: Color(0xFFFE4A49),
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                          label: 'Delete',
+                        ),
+                      ],
+                    ),
+                    child: CheckboxListTile(
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: item.isDone,
+                      title: Text(
+                        item.title,
+                        style: TextStyle(
+                            decoration: item.isDone
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            fontWeight: FontWeight.bold, color: item.isDone ? Colors.red:Colors.black),
+                      ),
+                      subtitle: Text(item.description,
+                          style: TextStyle(
+                              decoration: item.isDone
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,  color: item.isDone ? Colors.red:Colors.black)),
+                      // secondary: Container(
+                      //   width: 80,
+                      //   child: Row(
+                      //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //     children: [
+                      //       GestureDetector(
+                      //         child: const Icon(Icons.edit),
+                      //         onTap: () {
+                      //           callDialog(context, item: item);
+                      //         },
+                      //       ),
+                      //       GestureDetector(
+                      //         child: const Icon(
+                      //           Icons.delete,
+                      //           color: Colors.red,
+                      //         ),
+                      //         onTap: () async {
+                      //           bool? remover = await _canDelete(context, item);
+                      //           if(remover == true){
+                      //             _controller.removeItem(index);
+                      //           }
+                      //         },
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
+                      onChanged: (value) {
+                        _controller.insertEdit(Item(
+                            id: item.id,
+                            title: item.title,
+                            description: item.description,
+                            isDone: value ?? false));
+                      },
+                    ),
                   ),
-                ),
-                onChanged: (value) {
-                  _controller.insertEdit(Item(
-                      id: item.id,
-                      title: item.title,
-                      description: item.description,
-                      isDone: value ?? false));
-                },
+                  Divider(height: 1, color: Colors.grey.withOpacity(0.2),)
+                ],
               );
             },
           );
